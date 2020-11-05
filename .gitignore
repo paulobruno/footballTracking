@@ -6,6 +6,9 @@ __pycache__/
 Temp*
 temp*
 
+# External resources
+external/*
+
 # Commit file
 [Nn]otes.txt
 [Cc]ommit[Mm]essage*
