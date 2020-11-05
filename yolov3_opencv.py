@@ -6,6 +6,7 @@ import time
 
 # eliminate weak predictions
 min_prob = 0.2
+nms_thresh = 0.5
 
 
 # load input image
@@ -34,6 +35,8 @@ network_output = network.forward(output_layer_names)
 
 # save the bounding boxes
 bounding_boxes = []
+confidence_values = []
+
 img_h, img_w = input_img.shape[:2]
 
 for result in network_output:
@@ -54,11 +57,17 @@ for result in network_output:
             x_min = x_center - (box_w // 2)
             y_min = y_center - (box_h // 2)
 
-            bounding_boxes.append([x_min, y_min, box_w, box_h])
+            bounding_boxes.append([int(x_min), int(y_min), int(box_w), int(box_h)])
+            confidence_values.append(float(confidence))
 
+
+# remove duplicate detections with Non-Maximum Suppression
+results = cv2.dnn.NMSBoxes(bounding_boxes, confidence_values, min_prob, nms_thresh)
 
 # draw results
-for (x, y, w, h) in bounding_boxes:
+for i in results.flatten():
+    
+    (x, y, w, h) = bounding_boxes[i]
     
     # bounding boxes
     cv2.rectangle(input_img, (x, y), (x + w, y + h), (0, 255, 255), 2)
