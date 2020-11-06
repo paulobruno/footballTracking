@@ -18,9 +18,15 @@ layer_names = network.getLayerNames()
 output_layer_names = [layer_names[i[0] - 1] for i in network.getUnconnectedOutLayers()]
 
 
-video = cv2.VideoCapture('videos/temp_gol_1.mp4')
+video = cv2.VideoCapture('videos/temp_gol_2.mp4')
+
+four_cc = cv2.VideoWriter_fourcc(*'mp4v')
+output_video = cv2.VideoWriter('output.mp4', four_cc, 24.0, (960, 540))
 
 ret, frame = video.read()
+
+
+print('Started...')
 
 while frame is not None:
 
@@ -72,12 +78,13 @@ while frame is not None:
         # bounding boxes
         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 255), 2)
 
-
-    cv2.imshow('teste', frame)
-    cv2.waitKey(1)
+    output_video.write(frame)
 
     ret, frame = video.read()
 
 
+print('...Finished')
+
 video.release()
-cv2.destroyAllWindows()
+output_video.release()
+
