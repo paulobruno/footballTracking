@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from tqdm import trange
 
 
 # eliminate weak predictions
@@ -23,12 +24,14 @@ video = cv2.VideoCapture('videos/temp_gol_2.mp4')
 four_cc = cv2.VideoWriter_fourcc(*'mp4v')
 output_video = cv2.VideoWriter('output.mp4', four_cc, 24.0, (960, 540))
 
-ret, frame = video.read()
+num_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
 
 
-print('Started...')
+print('Processing frames...')
 
-while frame is not None:
+for _ in trange(num_frames):
+
+    ret, frame = video.read()
 
     frame = cv2.resize(frame, (960, 540))
 
@@ -80,10 +83,8 @@ while frame is not None:
 
     output_video.write(frame)
 
-    ret, frame = video.read()
+print('...Done!')
 
-
-print('...Finished')
 
 video.release()
 output_video.release()
