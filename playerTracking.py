@@ -1,6 +1,23 @@
 import cv2
 import numpy as np
 from tqdm import trange
+import argparse 
+
+
+# parse command line args
+parser = argparse.ArgumentParser(
+    description='Track football players from video.')
+
+parser.add_argument(
+    'input_video_file',
+    help='Path to the input video file.')
+parser.add_argument(
+    '-o', '--output-filename',
+    metavar='FILENAME',
+    help='Name of the output file. [default = output.mp4]',
+    default='output.mp4')
+
+args = parser.parse_args()
 
 
 # eliminate weak predictions
@@ -19,10 +36,10 @@ layer_names = network.getLayerNames()
 output_layer_names = [layer_names[i[0] - 1] for i in network.getUnconnectedOutLayers()]
 
 
-video = cv2.VideoCapture('videos/temp_gol_2.mp4')
+video = cv2.VideoCapture(args.input_video_file)
 
 four_cc = cv2.VideoWriter_fourcc(*'mp4v')
-output_video = cv2.VideoWriter('output.mp4', four_cc, 24.0, (960, 540))
+output_video = cv2.VideoWriter(args.output_filename, four_cc, 24.0, (960, 540))
 
 num_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
 
