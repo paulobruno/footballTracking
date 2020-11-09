@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from tqdm import trange
 import argparse 
+import time
 
 
 # parse command line args
@@ -45,6 +46,8 @@ num_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
 
 
 print('Processing frames...')
+
+start_time = time.time()
 
 for _ in trange(num_frames):
 
@@ -100,9 +103,11 @@ for _ in trange(num_frames):
 
     output_video.write(frame)
 
+elapsed_time = time.time() - start_time
+
 print('...Done!')
+print('Elapsed time: {:.3f} s. Seconds per frame: {:.3f} s.'.format(elapsed_time, elapsed_time/num_frames))
 
 
 video.release()
 output_video.release()
-
