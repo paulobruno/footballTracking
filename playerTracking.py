@@ -13,6 +13,41 @@ def euclidean_distance(p1: Tuple[float, float], p2: Tuple[float, float]) -> floa
     return sqrt(((p2[0] - p1[0]) ** 2) + ((p2[1] - p1[1]) ** 2))
 
 
+def network_output_from_frame(network, frame):
+    blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, (416, 416), swapRB=True, crop=False)
+    network.setInput(blob)
+    return network.forward(output_layer_names)
+
+
+def detect_players(network_output, img_w, img_h, min_prob=0.2):
+    
+    bounding_boxes = []
+    confidence_values = []
+
+    for result in network_output:
+        
+        for detection in result:
+
+            scores = detection[5:]
+            top_1_class = np.argmax(scores)
+            confidence = scores[top_1_class]
+
+            # only allow people and with enough confidence
+            if (0 == top_1_class) and (confidence > min_prob):
+
+                bounding_box = detection[0:4] * np.array([img_w, img_h, img_w, img_h])
+
+                x_center, y_center, box_w, box_h = bounding_box.astype(int)
+
+                x_min = x_center - (box_w // 2)
+                y_min = y_center - (box_h // 2)
+
+                bounding_boxes.append([int(x_min), int(y_min), int(box_w), int(box_h)])
+                confidence_values.append(float(confidence))
+
+    return bounding_boxes, confidence_values
+
+
 # parse command line args
 parser = argparse.ArgumentParser(
     description='Track football players from video.')
@@ -74,36 +109,11 @@ player_ids = []
 ret, frame = video.read()
 frame = cv2.resize(frame, (960, 540))
 
-blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, (416, 416), swapRB=True, crop=False)
-
-network.setInput(blob)
-network_output = network.forward(output_layer_names)
-
-bounding_boxes = []
-confidence_values = []
+network_output = network_output_from_frame(network, frame)
 
 img_h, img_w = frame.shape[:2]
 
-for result in network_output:
-    
-    for detection in result:
-
-        scores = detection[5:]
-        top_1_class = np.argmax(scores)
-        confidence = scores[top_1_class]
-
-        # only allow people and with enough confidence
-        if (0 == top_1_class) and (confidence > min_prob):
-
-            bounding_box = detection[0:4] * np.array([img_w, img_h, img_w, img_h])
-
-            x_center, y_center, box_w, box_h = bounding_box.astype(int)
-
-            x_min = x_center - (box_w // 2)
-            y_min = y_center - (box_h // 2)
-
-            bounding_boxes.append([int(x_min), int(y_min), int(box_w), int(box_h)])
-            confidence_values.append(float(confidence))
+bounding_boxes, confidence_values = detect_players(network_output, img_h, img_w, min_prob)
 
 # remove duplicate detections with Non-Maximum Suppression
 results = cv2.dnn.NMSBoxes(bounding_boxes, confidence_values, min_prob, nms_thresh)
@@ -113,16 +123,19 @@ for i in results.flatten():
     
     (x, y, w, h) = bounding_boxes[i]
 
-    c_x = x + (w / 2)
-    c_y = y + (y / 2)
-    
-    centroids.append((c_x, c_y))
-    player_ids.append(nextIdAvailable)
+    # exclude giant bounding boxes
+    if (w < 100) and (h < 200):
 
-    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 255), 2)
-    cv2.putText(frame, str(nextIdAvailable), (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+        c_x = x + (w / 2)
+        c_y = y + (y / 2)
+        
+        centroids.append((c_x, c_y))
+        player_ids.append(nextIdAvailable)
 
-    nextIdAvailable += 1
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 255), 2)
+        cv2.putText(frame, str(nextIdAvailable), (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+
+        nextIdAvailable += 1
     
 output_video.write(frame)
 
@@ -137,37 +150,11 @@ for _ in trange(num_frames-1):
     ret, frame = video.read()
     frame = cv2.resize(frame, (960, 540))
 
-    blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, (416, 416), swapRB=True, crop=False)
-
-    network.setInput(blob)
-    network_output = network.forward(output_layer_names)
-
-    bounding_boxes = []
-    confidence_values = []
+    network_output = network_output_from_frame(network, frame)
 
     img_h, img_w = frame.shape[:2]
 
-    for result in network_output:
-        
-        for detection in result:
-
-            scores = detection[5:]
-            top_1_class = np.argmax(scores)
-            confidence = scores[top_1_class]
-
-            # only allow people and with enough confidence
-            if (0 == top_1_class) and (confidence > min_prob):
-
-                bounding_box = detection[0:4] * np.array([img_w, img_h, img_w, img_h])
-
-                x_center, y_center, box_w, box_h = bounding_box.astype(int)
-
-                x_min = x_center - (box_w // 2)
-                y_min = y_center - (box_h // 2)
-
-                bounding_boxes.append([int(x_min), int(y_min), int(box_w), int(box_h)])
-                confidence_values.append(float(confidence))
-
+    bounding_boxes, confidence_values = detect_players(network_output, img_h, img_w, min_prob)
     
     # remove duplicate detections with Non-Maximum Suppression
     results = cv2.dnn.NMSBoxes(bounding_boxes, confidence_values, min_prob, nms_thresh)
