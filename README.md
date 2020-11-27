@@ -1,10 +1,12 @@
 ### Roadmap
+
 - [x] Load video
 - [x] Save video
 - [x] Players detection
-- [x] Players tracking
-- [ ] Detection post-processing
-- [ ] Tracking post-processing
+- [x] Players tracking by centroid
+- [ ] Jersey color
+- [ ] Remove duplicated IDs
+
 
 ### Preliminary results
 
