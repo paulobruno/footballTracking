@@ -19,35 +19,6 @@ def network_output_from_frame(network, frame):
     return network.forward(output_layer_names)
 
 
-def detect_players(network_output, img_w, img_h, min_prob=0.2):
-    
-    bounding_boxes = []
-    confidence_values = []
-
-    for result in network_output:
-        
-        for detection in result:
-
-            scores = detection[5:]
-            top_1_class = np.argmax(scores)
-            confidence = scores[top_1_class]
-
-            # only allow people and with enough confidence
-            if (0 == top_1_class) and (confidence > min_prob):
-
-                bounding_box = detection[0:4] * np.array([img_w, img_h, img_w, img_h])
-
-                x_center, y_center, box_w, box_h = bounding_box.astype(int)
-
-                x_min = x_center - (box_w // 2)
-                y_min = y_center - (box_h // 2)
-
-                bounding_boxes.append([int(x_min), int(y_min), int(box_w), int(box_h)])
-                confidence_values.append(float(confidence))
-
-    return bounding_boxes, confidence_values
-
-
 # parse command line args
 parser = argparse.ArgumentParser(
     description='Track football players from video.')
@@ -111,9 +82,31 @@ frame = cv2.resize(frame, (960, 540))
 
 network_output = network_output_from_frame(network, frame)
 
+bounding_boxes = []
+confidence_values = []
+
 img_h, img_w = frame.shape[:2]
 
-bounding_boxes, confidence_values = detect_players(network_output, img_h, img_w, min_prob)
+for result in network_output:
+    
+    for detection in result:
+
+        scores = detection[5:]
+        top_1_class = np.argmax(scores)
+        confidence = scores[top_1_class]
+
+        # only allow people and with enough confidence
+        if (0 == top_1_class) and (confidence > min_prob):
+
+            bounding_box = detection[0:4] * np.array([img_w, img_h, img_w, img_h])
+
+            x_center, y_center, box_w, box_h = bounding_box.astype(int)
+
+            x_min = x_center - (box_w // 2)
+            y_min = y_center - (box_h // 2)
+
+            bounding_boxes.append([int(x_min), int(y_min), int(box_w), int(box_h)])
+            confidence_values.append(float(confidence))
 
 # remove duplicate detections with Non-Maximum Suppression
 results = cv2.dnn.NMSBoxes(bounding_boxes, confidence_values, min_prob, nms_thresh)
@@ -152,9 +145,32 @@ for _ in trange(num_frames-1):
 
     network_output = network_output_from_frame(network, frame)
 
+    bounding_boxes = []
+    confidence_values = []
+
     img_h, img_w = frame.shape[:2]
 
-    bounding_boxes, confidence_values = detect_players(network_output, img_h, img_w, min_prob)
+    for result in network_output:
+        
+        for detection in result:
+
+            scores = detection[5:]
+            top_1_class = np.argmax(scores)
+            confidence = scores[top_1_class]
+
+            # only allow people and with enough confidence
+            if (0 == top_1_class) and (confidence > min_prob):
+
+                bounding_box = detection[0:4] * np.array([img_w, img_h, img_w, img_h])
+
+                x_center, y_center, box_w, box_h = bounding_box.astype(int)
+
+                x_min = x_center - (box_w // 2)
+                y_min = y_center - (box_h // 2)
+
+                bounding_boxes.append([int(x_min), int(y_min), int(box_w), int(box_h)])
+                confidence_values.append(float(confidence))
+
     
     # remove duplicate detections with Non-Maximum Suppression
     results = cv2.dnn.NMSBoxes(bounding_boxes, confidence_values, min_prob, nms_thresh)
